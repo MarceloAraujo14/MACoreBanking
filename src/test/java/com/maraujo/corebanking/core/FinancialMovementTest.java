@@ -83,10 +83,7 @@ class FinancialMovementTest {
                 .build();
 
         //when
-        assertThrows(IllegalStateException.class, () -> {
-
-            financialMovement.transfer(financialMovementBuild);
-        });
+        assertThrows(IllegalStateException.class, () -> financialMovement.transfer(financialMovementBuild));
         //then
         assertEquals(100L, accountRepository.findByAccountNumber(accountFromNumber).getBalance());
         assertEquals(0L, accountRepository.findByAccountNumber(accountToNumber).getBalance());
