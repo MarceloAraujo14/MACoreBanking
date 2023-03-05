@@ -7,7 +7,7 @@ import java.util.UUID;
 
 @Data
 @Builder
-public class FinancialMovementRequest {
+public class TransferRequest {
     private UUID operationId;
     private Integer accountFrom;
     private Integer accountTo;

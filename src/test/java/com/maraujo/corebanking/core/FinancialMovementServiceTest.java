@@ -1,18 +1,15 @@
 package com.maraujo.corebanking.core;
 
-import com.maraujo.corebanking.core.domain.FinancialMovement;
-import com.maraujo.corebanking.core.entity.AccountEntity;
 import com.maraujo.corebanking.core.repository.AccountRepository;
-import com.maraujo.corebanking.core.request.FinancialMovementRequest;
+import com.maraujo.corebanking.core.request.TransferRequest;
+import com.maraujo.corebanking.core.service.AccountService;
+import com.maraujo.corebanking.core.service.FinancialMovementService;
+import com.maraujo.corebanking.core.entity.AccountEntity;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
 import java.util.UUID;
@@ -22,26 +19,28 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author maraujo
- *
+ * Classe de Teste Funcional da classe FinancialMovementService
  *
  */
 
 @SpringBootTest
 @ActiveProfiles("test")
-class FinancialMovementTest {
+class FinancialMovementServiceTest {
 
     @Autowired
-    FinancialMovement financialMovement;
+    FinancialMovementService financialMovementService;
+    @Autowired
+    AccountService accountService;
     @Autowired
     AccountRepository accountRepository;
 
     @AfterEach
     void tearDown() {
-        accountRepository.deleteAll();
+        accountService.deleteAll();
     }
 
     /**
-     * Deve realizar a movimentação do saldo entre a conta de origem e a conta de destino
+     * Testa a movimentação do saldo entre a conta de origem e a conta de destino
      */
     @Test
     void should_transfer_from_origin_to_destiny_account(){
@@ -51,20 +50,23 @@ class FinancialMovementTest {
         int accountToNumber = 302210;
         var accountFrom = AccountEntity.builder().accountNumber(accountFromNumber).balance(150L).build();
         var accountTo = AccountEntity.builder().accountNumber(accountToNumber).balance(0L).build();
-        accountRepository.saveAll(List.of(accountFrom, accountTo));
+        accountService.saveAll(List.of(accountFrom, accountTo));
         //when
-        financialMovement.transfer(
-                FinancialMovementRequest.builder()
+        financialMovementService.transfer(
+                TransferRequest.builder()
                         .operationId(UUID.randomUUID())
                         .amount(amount)
                         .accountFrom(accountFromNumber)
                         .accountTo(accountToNumber)
                         .build());
         //then
-        assertEquals(0, accountRepository.findByAccountNumber(accountFromNumber).getBalance());
-        assertEquals(150L, accountRepository.findByAccountNumber(accountToNumber).getBalance());
+        assertEquals(0, accountService.findByAccountNumber(accountFromNumber).getBalance());
+        assertEquals(150L, accountService.findByAccountNumber(accountToNumber).getBalance());
     }
 
+    /**
+     * Deve bloquear a movimentação de saldo da conta de origem com saldo menor que o necessário
+     */
     @Test
     void should_throw_when_insuficient_balance_from(){
         //given
@@ -73,9 +75,9 @@ class FinancialMovementTest {
         int accountToNumber = 302210;
         var accountFrom = AccountEntity.builder().accountNumber(accountFromNumber).balance(100L).build();
         var accountTo = AccountEntity.builder().accountNumber(accountToNumber).balance(0L).build();
-        accountRepository.saveAll(List.of(accountFrom, accountTo));
+        accountService.saveAll(List.of(accountFrom, accountTo));
 
-        FinancialMovementRequest financialMovementBuild = FinancialMovementRequest.builder()
+        TransferRequest transferRequestBuild = TransferRequest.builder()
                 .operationId(UUID.randomUUID())
                 .amount(amount)
                 .accountFrom(accountFromNumber)
@@ -83,10 +85,10 @@ class FinancialMovementTest {
                 .build();
 
         //when
-        assertThrows(IllegalStateException.class, () -> financialMovement.transfer(financialMovementBuild));
+        assertThrows(IllegalStateException.class, () -> financialMovementService.transfer(transferRequestBuild));
         //then
-        assertEquals(100L, accountRepository.findByAccountNumber(accountFromNumber).getBalance());
-        assertEquals(0L, accountRepository.findByAccountNumber(accountToNumber).getBalance());
+        assertEquals(100L, accountService.findByAccountNumber(accountFromNumber).getBalance());
+        assertEquals(0L, accountService.findByAccountNumber(accountToNumber).getBalance());
     }
 
 
